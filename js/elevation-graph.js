@@ -132,7 +132,26 @@ d3.json("elevation.geojson", function(json) {
                 //When a point on the graph is clicked, plot the correspoinding point on the map
 
                 geoJsonLayer.clearLayers();
-                geoJsonLayer = L.geoJson(freeBus).addTo(map);
+                geoJsonLayer = L.geoJson(freeBus, {
+                    onEachFeature: function(feature, layer) {
+                        layer.on('mouseover', function(e) {
+                            //If user hovers over the line on the map
+                            //Get coordinates associated with hover pointer
+                            var mouselat = e.latlng.lat;
+                            var mouselng = e.latlng.lng;
+                            //Get the point on the graph closest to the mouse location
+
+                            highlightPoint(mouselat, mouselng);
+
+
+                        });
+                        layer.on('mouseout', function(e) {
+                            unhighlightPoint();
+
+                        });
+                    }
+
+                }).addTo(map);
             });
         //X axis label
         svg.append("text")
@@ -221,6 +240,7 @@ function unhighlightPoint() {
 }
 
 function highlightPoint(mouselat, mouselng) {
+
     var minDist = 1000;
     var minDistLat = 0;
     var minDistLng = 0;
@@ -237,7 +257,7 @@ function highlightPoint(mouselat, mouselng) {
             highlightid = i;
             minDistId = "circle" + i;
         }
-        console.log(dval[3], dval[2]);
+
 
     });
     //console.log(mouselat, mouselng);
