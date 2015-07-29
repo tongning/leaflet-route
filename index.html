@@ -11,12 +11,12 @@
     <style type="text/css">
         #map {
             position: relative;
-            height: 80%;
+            height: 70%;
         }
         
         #elevation-graph {
             position: relative;
-            height: 20%;
+            height: 30%;
             width: 90%;
             top: -100pz;
             left: 100px;
@@ -36,6 +36,9 @@
 
     <div id="map"></div>
     <script src="route.geojson"></script>
+	<div id="elevation-graph">
+        <script src="js/elevation-graph.js"></script>
+    </div>
     <script language="javascript">
         var map = L.map('map').setView([38.902, -76.978], 17);
         L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
@@ -44,12 +47,27 @@
             id: 'tlng05.8718d45a',
             accessToken: 'pk.eyJ1IjoidGxuZzA1IiwiYSI6Ijc0YWNlMGUyYjYzMjk4OWYyNTEzNTBkYmE1OTk2NjU3In0.0C0qnsoVHF1U7jrONokNZg'
         }).addTo(map);
-        var geoJsonLayer = L.geoJson(freeBus).addTo(map);
+        var geoJsonLayer = L.geoJson(freeBus, {
+            onEachFeature: function(feature, layer) {
+                layer.on('mouseover', function(e) {
+                    //If user hovers over the line on the map
+                    //Get coordinates associated with hover pointer
+					var mouselat = e.latlng.lat;
+					var mouselng = e.latlng.lng;
+                    //Get the point on the graph closest to the mouse location
+					highlightPoint(mouselat, mouselng);
+
+                });
+				layer.on('mouseout', function(e) {
+                    unhighlightPoint();
+
+                });
+            }
+
+        }).addTo(map);
     </script>
 
-    <div id="elevation-graph">
-        <script src="js/elevation-graph.js"></script>
-    </div>
+    
 </body>
 
 </html>
