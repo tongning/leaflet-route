@@ -179,6 +179,7 @@ d3.json("elevation.geojson", function(json) {
             .attr("d", lineFunction(data))
             .attr("stroke", "blue")
             .attr("stroke-width", 2)
+            .attr("id", "graphline")
             .attr("fill", "none");
         var totalLength = lineGraph.node().getTotalLength();
         lineGraph
@@ -196,6 +197,26 @@ d3.json("elevation.geojson", function(json) {
             .attr("y", padding - 20)
             .attr("width", w - padding * 2)
             .attr("height", h - padding * 2);
+        svg.selectAll("#graphline").on('mouseover', function() {
+
+            var coordinates = [0, 0];
+            coordinates = d3.mouse(this);
+            console.log(coordinates);
+
+            var neighborid = 0;
+            svg.selectAll("circle").each(function(d, i) {
+                var pointX = d3.select(this).attr("cx");
+
+                if (pointX > coordinates[0]) {
+                    return;
+                }
+
+                neighborid++;
+
+            });
+            console.log("neighbor is " + neighborid);
+
+        });
         svg.selectAll("circle")
             .data(data)
             .transition()
@@ -275,4 +296,22 @@ function highlightPoint(mouselat, mouselng) {
 
 function deg2rad(deg) {
     return deg * (Math.PI / 180)
+}
+
+function findNeighboringPoints(mouseX, mouseY) {
+    //iterate through each point until the X value of each point is greater
+    //than mouseX, return index of that point
+    console.log("findneighboringpoints was called");
+    var returnid = 0;
+    svg.selectAll("circle").each(function(d, i) {
+        var pointX = d3.select(this).attr("cx");
+
+        if (pointX > mouseX) {
+            console.log("returning " + returnid)
+            return returnid;
+        }
+
+        returnid++;
+
+    });
 }
