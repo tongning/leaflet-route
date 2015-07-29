@@ -1,46 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8" />
-<title>Leaflet visualization</title>
-<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
-<link rel="stylesheet" href="css/graph-style.css" />
-<script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
-<style type="text/css">
-#map {
-position:relative;
-height: 80%;
-}
-#elevation-graph {
-position:relative;
-height: 20%;
-width:90%;
-top: -100pz;
-left: 100px;
-}
-html,body { height: 100%; margin: 0px; padding: 0px; }
-</style>
+    <meta charset="utf-8" />
+    <title>Leaflet visualization</title>
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css" />
+    <link rel="stylesheet" href="css/graph-style.css" />
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+    <style type="text/css">
+        #map {
+            position: relative;
+            height: 80%;
+        }
+        
+        #elevation-graph {
+            position: relative;
+            height: 20%;
+            width: 90%;
+            top: -100pz;
+            left: 100px;
+        }
+        
+        html,
+        body {
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
 
 </head>
 
 <body>
 
-<div id="map"></div>
+    <div id="map"></div>
+    <script src="route.geojson"></script>
+    <script language="javascript">
+        var map = L.map('map').setView([38.902, -76.978], 17);
+        L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+            maxZoom: 18,
+            id: 'tlng05.8718d45a',
+            accessToken: 'pk.eyJ1IjoidGxuZzA1IiwiYSI6Ijc0YWNlMGUyYjYzMjk4OWYyNTEzNTBkYmE1OTk2NjU3In0.0C0qnsoVHF1U7jrONokNZg'
+        }).addTo(map);
+        var geoJsonLayer = L.geoJson(freeBus).addTo(map);
+    </script>
 
-<script language="javascript">
-var map = L.map('map').setView([51.505, -0.09], 13);
-L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-    maxZoom: 18,
-    id: 'tlng05.8718d45a',
-    accessToken: 'pk.eyJ1IjoidGxuZzA1IiwiYSI6Ijc0YWNlMGUyYjYzMjk4OWYyNTEzNTBkYmE1OTk2NjU3In0.0C0qnsoVHF1U7jrONokNZg'
-}).addTo(map);
-</script>
-
-<div id="elevation-graph">
-<script src="js/elevation-graph.js"></script>
-</div>
+    <div id="elevation-graph">
+        <script src="js/elevation-graph.js"></script>
+    </div>
 </body>
 
 </html>

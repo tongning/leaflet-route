@@ -72,7 +72,10 @@ d3.json("elevation.geojson", function(json) {
                     .append("svg")
                     .attr("width", w)
                     .attr("height", h);
-					
+				var linesvg = d3.select("body")
+					.append("svg")
+					.attr("width", window.innerWidth)
+					.attr("height", window.innerHeight);
 				
                 svg.selectAll("circle")
                     .data(data_zero)
@@ -86,7 +89,44 @@ d3.json("elevation.geojson", function(json) {
                         return yScale(d[1]);
                     })
                     .attr("r", point_radius)
-                    .attr("class", "point");
+                    .attr("class", "point")
+					.on("mouseover", function(d, i){
+						//When a point on the graph is clicked, plot the correspoinding point on the map
+						var lon = coordinates[i][0];
+						var lat = coordinates[i][1];
+						console.log(lon, lat);
+						var newPoint = [{
+							"type": "Point",
+							"coordinates": [lon, lat]
+							}];
+						geoJsonLayer.addData(newPoint);
+						var latlng = L.latLng(lat, lon);
+						var layerPoint = map.latLngToContainerPoint(latlng);
+						//Plot a line to 0, 0
+						var linedata = [[layerPoint.x, layerPoint.y],[0,0]];
+						linesvg
+							.append("line")
+							.attr("x1", function(d){
+								return linedata[0][0];
+							})
+							.attr("y1", function(d){
+								return linedata[0][1];
+							})
+							.attr("x2", function(d){
+								return linedata[1][0];
+							})
+							.attr("y2", function(d){
+								return linedata[1][1];
+							})
+							.attr("style","stroke:rgb(255,0,0);stroke-width:2");
+						console.log(layerPoint);
+					})
+					.on("mouseout", function(d, i){
+						//When a point on the graph is clicked, plot the correspoinding point on the map
+						
+						geoJsonLayer.clearLayers();
+						geoJsonLayer = L.geoJson(freeBus).addTo(map);
+					});
                 //X axis label
                 svg.append("text")
                     .attr("class", "xlabel")
