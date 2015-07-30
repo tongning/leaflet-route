@@ -1,5 +1,7 @@
 var svg;
 var linesvg;
+var xScale;
+var yScale;
 d3.json("elevation.geojson", function(json) {
         //Retrieve array of elevation info from json file
         var elevation_data = json.features[0].properties.elevation;
@@ -44,7 +46,7 @@ d3.json("elevation.geojson", function(json) {
         var w = document.getElementById("elevation-graph").offsetWidth;
         var h = document.getElementById("elevation-graph").offsetHeight;
         var padding = 50;
-        var point_radius = 6.5;
+        var point_radius = 0.01;
         var lineFunction = d3.svg.line()
             .x(function(d) {
                 return xScale(d[0]);
@@ -54,12 +56,12 @@ d3.json("elevation.geojson", function(json) {
             })
             .interpolate("cardinal");
 
-        var xScale = d3.scale.linear()
+        xScale = d3.scale.linear()
             .domain([0, d3.max(data, function(d) {
                 return d[0];
             })])
             .range([padding, w - padding * 2]);
-        var yScale = d3.scale.linear()
+        yScale = d3.scale.linear()
             .domain([0, d3.max(data, function(d) {
                 return d[1];
             })])
@@ -94,6 +96,7 @@ d3.json("elevation.geojson", function(json) {
             })
             .attr("r", point_radius)
             .attr("class", "point")
+			.attr("class", "originalpoint")
             .on("mouseover", function(d, i) {
                 //When a point on the graph is clicked, plot the correspoinding point on the map
                 var lon = coordinates[i][0];
@@ -125,7 +128,7 @@ d3.json("elevation.geojson", function(json) {
                     .attr("y2", function(d) {
                         return linedata[1][1];
                     })
-                    .attr("style", "stroke:rgb(255,0,0);stroke-width:2");
+                    .attr("style", "stroke:rgb(255,0,0);stroke-width:5");
                 console.log(layerPoint);
             })
             .on("mouseout", function(d, i) {
@@ -134,7 +137,7 @@ d3.json("elevation.geojson", function(json) {
                 geoJsonLayer.clearLayers();
                 geoJsonLayer = L.geoJson(freeBus, {
                     onEachFeature: function(feature, layer) {
-                        layer.on('mouseover', function(e) {
+                        layer.on('mousemove', function(e) {
                             //If user hovers over the line on the map
                             //Get coordinates associated with hover pointer
                             var mouselat = e.latlng.lat;
@@ -178,7 +181,7 @@ d3.json("elevation.geojson", function(json) {
         lineGraph = svg.append("path")
             .attr("d", lineFunction(data))
             .attr("stroke", "blue")
-            .attr("stroke-width", 2)
+            .attr("stroke-width", 5)
             .attr("id", "graphline")
             .attr("fill", "none");
         var totalLength = lineGraph.node().getTotalLength();
@@ -201,7 +204,7 @@ d3.json("elevation.geojson", function(json) {
             geoJsonLayer.clearLayers();
             geoJsonLayer = L.geoJson(freeBus, {
                 onEachFeature: function(feature, layer) {
-                    layer.on('mouseover', function(e) {
+                    layer.on('mousemove', function(e) {
                         //If user hovers over the line on the map
                         //Get coordinates associated with hover pointer
                         var mouselat = e.latlng.lat;
@@ -220,14 +223,14 @@ d3.json("elevation.geojson", function(json) {
 
             }).addTo(map);
         });
-        svg.selectAll("#graphline").on('mouseover', function() {
+        svg.selectAll("#graphline").on('mousemove', function() {
 
             var coordinates = [0, 0];
             coordinates = d3.mouse(this);
             console.log(coordinates);
 
             var neighborid = 0;
-            svg.selectAll("circle").each(function(d, i) {
+            svg.selectAll(".originalpoint").each(function(d, i) {
                 var pointX = d3.select(this).attr("cx");
 
                 if (pointX > coordinates[0]) {
@@ -331,10 +334,129 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 var highlightid = -1;
 
 function unhighlightPoint() {
-    svg.selectAll("#circle" + highlightid)
-        .attr("r", 6.5);
+	
+    svg.selectAll(".insertedpoint")
+        .attr("r", 0.001);
+		
 }
 
+function highlightPoint(mouselat, mouselng) {
+
+    //find the IDs of the two closest neighbors
+    var foundindexes = false;
+    var index1 = 0;
+    var index2 = 1;
+    while (!foundindexes) {
+        svg.selectAll("#circle" + index1).each(function(circle1data) {
+            svg.selectAll("#circle" + index2).each(function(circle2data) {
+                var circle1lat = circle1data[3];
+                var circle1lng = circle1data[2];
+                var circle2lat = circle2data[3];
+                var circle2lng = circle2data[2];
+                //check if the mouse lies between these two points
+                var distBetweenPoints = Math.sqrt((circle2lat - circle1lat) * (circle2lat - circle1lat) + (circle2lng - circle1lng) * (circle2lng - circle1lng));
+                var distMouse2c1 = Math.sqrt((mouselat - circle1lat) * (mouselat - circle1lat) + (mouselng - circle1lng) * (mouselng - circle1lng));
+                var distMouse2c2 = Math.sqrt((circle2lat - mouselat) * (circle2lat - mouselat) + (circle2lng - mouselng) * (circle2lng - mouselng));
+                var tolerance = 0.00005;
+                if ((distMouse2c1 + distMouse2c2 > distBetweenPoints - tolerance) && (distMouse2c1 + distMouse2c2 < distBetweenPoints + tolerance)) {
+                    foundindexes = true;
+                }
+            })
+        });
+        if (!foundindexes) {
+            index1++;
+            index2++;
+        }
+        //infinite loop protection
+        if (index2 > 50) {
+            foundindexes = true;
+        }
+    }
+	console.log("neighbor ids");
+	console.log(index1, index2);
+	var neighbor1GeoCoords = [0, 0];
+	var neighbor1GraphCoords = [0, 0];
+	var neighbor2GeoCoords = [0, 0];
+	var neighbor2GraphCoords = [0, 0];
+	svg.selectAll("#circle"+index1).each(function(d){
+		neighbor1GeoCoords = [d[3], d[2]];
+		neighbor1GraphCoords = [d[0], d[1]];
+	});
+	svg.selectAll("#circle"+index2).each(function(d){
+		neighbor2GeoCoords = [d[3], d[2]];
+		neighbor2GraphCoords = [d[0], d[1]];
+	});
+	
+	var x1 = neighbor1GeoCoords[0];
+	var y1 = neighbor1GeoCoords[1];
+	var x2 = neighbor2GeoCoords[0];
+	var y2 = neighbor2GeoCoords[1];
+	
+	var geoDistNeighbors = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+	x2 = mouselat;
+	y2 = mouselng;
+	console.log(x1, y1, x2, y2);
+	var mouseToNeighbor1Dist = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+	var mouseFractionPosition = mouseToNeighbor1Dist / geoDistNeighbors;
+	//calculate distance between the neighbors on the graph
+	x1 = neighbor1GraphCoords[0];
+	y1 = neighbor1GraphCoords[1];
+	x2 = neighbor2GraphCoords[0];
+	y2 = neighbor2GraphCoords[1];
+	console.log("mouse fraction position");
+	console.log(mouseFractionPosition);
+	var neighborsDistOnGraph = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+	var distanceToMove = mouseFractionPosition * neighborsDistOnGraph;
+	
+	var resultX = x1 + (distanceToMove / neighborsDistOnGraph) * (x2 - x1);
+    var resultY = y1 + (distanceToMove / neighborsDistOnGraph) * (y2 - y1);
+	
+	var newcircle = svg.append("circle")
+		.attr("class", "point")
+		.attr("cx", xScale(resultX))
+		.attr("cy", yScale(resultY))
+		.attr("r", 6.5)
+		.attr("class", "insertedpoint");
+	
+    console.log("Found placement location!");
+	console.log(xScale(resultX), yScale(resultY));
+	//add new circle to svg
+	
+    /*
+	var mousecoordinates = [mouselng, mouselat];
+	
+           
+            console.log(mousecoordinates);
+
+            var neighborid = 0;
+            svg.selectAll("circle").each(function(d, i) {
+                var pointX = d[2];
+
+                if (pointX > mousecoordinates[0]) {
+                    return;
+                }
+
+                neighborid++;
+
+            });
+			console.log("neighbor id is "+neighborid);
+
+            //select the right neighbor and get its coordinates, both on the chart and geographically
+            neighboridString = "#circle" + neighborid;
+
+            var rightneighborCoords = [0, 0];
+            var rightneighborGeoCoords = [0, 0];
+
+            svg.selectAll(neighboridString).each(function(d, i) {
+                rightneighborCoords = [d3.select(this).attr("cx"), d3.select(this).attr("cy")];
+                rightneighborGeoCoords = [d[3], d[2]];
+            });
+			console.log(rightneighborCoords);
+			*/
+
+}
+
+/*
 function highlightPoint(mouselat, mouselng) {
 
     var minDist = 1000;
@@ -368,7 +490,7 @@ function highlightPoint(mouselat, mouselng) {
 
 
 }
-
+*/
 function deg2rad(deg) {
     return deg * (Math.PI / 180)
 }
@@ -378,7 +500,7 @@ function findNeighboringPoints(mouseX, mouseY) {
     //than mouseX, return index of that point
     console.log("findneighboringpoints was called");
     var returnid = 0;
-    svg.selectAll("circle").each(function(d, i) {
+    svg.selectAll(".originalpoint").each(function(d, i) {
         var pointX = d3.select(this).attr("cx");
 
         if (pointX > mouseX) {
