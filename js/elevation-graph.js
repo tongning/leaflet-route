@@ -197,6 +197,29 @@ d3.json("elevation.geojson", function(json) {
             .attr("y", padding - 20)
             .attr("width", w - padding * 2)
             .attr("height", h - padding * 2);
+        svg.selectAll("#graphline").on('mouseout', function() {
+            geoJsonLayer.clearLayers();
+            geoJsonLayer = L.geoJson(freeBus, {
+                onEachFeature: function(feature, layer) {
+                    layer.on('mouseover', function(e) {
+                        //If user hovers over the line on the map
+                        //Get coordinates associated with hover pointer
+                        var mouselat = e.latlng.lat;
+                        var mouselng = e.latlng.lng;
+                        //Get the point on the graph closest to the mouse location
+
+                        highlightPoint(mouselat, mouselng);
+
+
+                    });
+                    layer.on('mouseout', function(e) {
+                        unhighlightPoint();
+
+                    });
+                }
+
+            }).addTo(map);
+        });
         svg.selectAll("#graphline").on('mouseover', function() {
 
             var coordinates = [0, 0];
@@ -214,7 +237,59 @@ d3.json("elevation.geojson", function(json) {
                 neighborid++;
 
             });
-            console.log("neighbor is " + neighborid);
+
+            //select the right neighbor and get its coordinates, both on the chart and geographically
+            neighboridString = "#circle" + neighborid;
+
+            var rightneighborCoords = [0, 0];
+            var rightneighborGeoCoords = [0, 0];
+
+            svg.selectAll(neighboridString).each(function(d, i) {
+                rightneighborCoords = [d3.select(this).attr("cx"), d3.select(this).attr("cy")];
+                rightneighborGeoCoords = [d[3], d[2]];
+            });
+
+            //repeat the process for the left neighbor
+            neighboridString = "#circle" + (neighborid - 1);
+            console.log("left neighbor id string is " + neighboridString);
+            var leftneighborCoords = [0, 0];
+            var leftneighborGeoCoords = [0, 0];
+            svg.selectAll(neighboridString).each(function(d, i) {
+                leftneighborCoords = [d3.select(this).attr("cx"), d3.select(this).attr("cy")];
+                leftneighborGeoCoords = [d[3], d[2]];
+            });
+
+            //calculate distance between left neighbor and right neighbor on the graph
+            var x1 = leftneighborCoords[0];
+            var y1 = leftneighborCoords[1];
+            var x2 = rightneighborCoords[0];
+            var y2 = rightneighborCoords[1];
+            var graphDistNeighbors = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+            //calculate distance between mouse and left neighbor on the graph
+            x2 = coordinates[0];
+            y2 = coordinates[1];
+            var mouseToLeftNeighborDist = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+            //calculate mouse cursor's fractional position on line between left and right neighbor
+            var mouseFractionPosition = mouseToLeftNeighborDist / graphDistNeighbors;
+
+            //finally calculate the geographic coordinates this would correspond to
+            //calculate distance between the geographic coordinates of left and right neighbor
+            x1 = leftneighborGeoCoords[0];
+            y1 = leftneighborGeoCoords[1];
+            x2 = rightneighborGeoCoords[0];
+            y2 = rightneighborGeoCoords[1];
+            var geoNeighborsDistance = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+            //calculate distance to move from the left neighbor
+            var distanceToMove = mouseFractionPosition * geoNeighborsDistance;
+            var resultX = x1 + (distanceToMove / geoNeighborsDistance) * (x2 - x1);
+            var resultY = y1 + (distanceToMove / geoNeighborsDistance) * (y2 - y1);
+            //plot a new geojson point at this location
+
+            var interpolatedPoint = [{
+                "type": "Point",
+                "coordinates": [resultY, resultX]
+            }];
+            geoJsonLayer.addData(interpolatedPoint);
 
         });
         svg.selectAll("circle")
