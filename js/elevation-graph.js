@@ -143,7 +143,7 @@ d3.json("elevation.geojson", function(json) {
                             var mouselat = e.latlng.lat;
                             var mouselng = e.latlng.lng;
                             //Get the point on the graph closest to the mouse location
-
+							unhighlightPoint();
                             highlightPoint(mouselat, mouselng);
 
 
@@ -202,6 +202,26 @@ d3.json("elevation.geojson", function(json) {
             .attr("height", h - padding * 2);
         svg.selectAll("#graphline").on('mouseout', function() {
             geoJsonLayer.clearLayers();
+			geoJsonLayer = L.geoJson(freeBus, {
+                    onEachFeature: function(feature, layer) {
+                        layer.on('mousemove', function(e) {
+                            //If user hovers over the line on the map
+                            //Get coordinates associated with hover pointer
+                            var mouselat = e.latlng.lat;
+                            var mouselng = e.latlng.lng;
+                            //Get the point on the graph closest to the mouse location
+							unhighlightPoint();
+                            highlightPoint(mouselat, mouselng);
+
+
+                        });
+                        layer.on('mouseout', function(e) {
+                            unhighlightPoint();
+
+                        });
+                    }
+
+                }).addTo(map);
             geoJsonLayer = L.geoJson(freeBus, {
                 onEachFeature: function(feature, layer) {
                     layer.on('mousemove', function(e) {
@@ -210,7 +230,7 @@ d3.json("elevation.geojson", function(json) {
                         var mouselat = e.latlng.lat;
                         var mouselng = e.latlng.lng;
                         //Get the point on the graph closest to the mouse location
-
+						unhighlightPoint();
                         highlightPoint(mouselat, mouselng);
 
 
@@ -223,8 +243,10 @@ d3.json("elevation.geojson", function(json) {
 
             }).addTo(map);
         });
+		var previousinterpolatedpoint;
         svg.selectAll("#graphline").on('mousemove', function() {
-
+			//remove previous point, if it exists
+			geoJsonLayer.clearLayers();
             var coordinates = [0, 0];
             coordinates = d3.mouse(this);
             console.log(coordinates);
@@ -292,6 +314,7 @@ d3.json("elevation.geojson", function(json) {
                 "type": "Point",
                 "coordinates": [resultY, resultX]
             }];
+			previousinterpolatedpoint = interpolatedPoint;
             geoJsonLayer.addData(interpolatedPoint);
 
         });
