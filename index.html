@@ -28,8 +28,45 @@
             margin: 0px;
             padding: 0px;
         }
-    </style>
+		
+		#panel {
+        position: absolute;
+        top: 5px;
+        left: 50%;
+        margin-left: -180px;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+      }
 
+      /*
+      Provide the following styles for both ID and class,
+      where ID represents an actual existing "panel" with
+      JS bound to its name, and the class is just non-map
+      content that may already have a different ID with
+      JS bound to its name.
+      */
+
+      #panel, .panel {
+        font-family: 'Roboto','sans-serif';
+        line-height: 30px;
+        padding-left: 10px;
+      }
+
+      #panel select, #panel input, .panel select, .panel input {
+        font-size: 15px;
+      }
+
+      #panel select, .panel select {
+        width: 100%;
+      }
+
+      #panel i, .panel i {
+        font-size: 12px;
+      }
+    </style>
+	<script src="js/leaflet-knn.min.js"></script>
 </head>
 
 <body>
@@ -39,6 +76,7 @@
 	<div id="elevation-graph">
         <script src="js/elevation-graph.js"></script>
     </div>
+	
     <script language="javascript">
         var map = L.map('map').setView([38.902, -76.978], 17);
         L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
@@ -67,9 +105,43 @@
             }
 
         }).addTo(map);
+		
     </script>
-
-    
+	<script>
+	function codeAddress(){
+		console.log("running this");
+		var add = document.getElementById('address').value;
+		var result = getCoordinates(add);
+		var resultjson = JSON.parse(result);
+		var geocodelat = resultjson.results[0].geometry.lat;
+		var geocodelng = resultjson.results[0].geometry.lng;
+		console.log(geocodelat, geocodelng);
+		var nearest = leafletKnn(geoJsonLayer).nearest(L.latLng(geocodelat, geocodelng), 5);
+		console.log('nearest geojson point is at');
+		console.log(nearest[0].lat, nearest[0].lon);
+		var newjsonPoint = [{
+                "type": "Point",
+                "coordinates": [nearest[0].lon, nearest[0].lat]
+            }];
+            geoJsonLayer.addData(newjsonPoint);
+		
+	}
+	//console.log(result);
+	function getCoordinates(address){
+		var url = 'https://api.opencagedata.com/geocode/v1/json?q=';
+		
+		var addressEncoded = encodeURIComponent(address);
+		url = url + addressEncoded + '&key=7945028e977fa9593e5b02378cbf0f27&pretty=1';
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open("GET", url, false);
+		xmlHttp.send(null);
+		return xmlHttp.responseText;
+	}
+	</script>
+    <div id="panel">
+      <input id="address" type="textbox" value="1818 maryland ave ne, washington, dc">
+      <input type="button" value="Search" onclick="codeAddress()">
+    </div>
 </body>
 
 </html>
